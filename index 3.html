@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>🎲 Dự đoán 3 xúc xắc</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#0b0d12;color:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+main{max-width:720px;margin:auto;padding:18px 14px 40px}.card{background:#171b24;border:1px solid #2a3040;border-radius:20px;padding:18px;margin-bottom:14px}
+h1{font-size:25px;margin:0 0 5px}.sub{color:#9da5b5;font-size:14px;margin-bottom:14px}
+textarea{width:100%;height:120px;border:1px solid #353d4f;border-radius:14px;background:#0d1016;color:white;padding:14px;font-size:18px;outline:none}
+button{width:100%;border:0;border-radius:14px;padding:15px;margin-top:10px;background:#fff;color:#111;font-size:17px;font-weight:800}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.box{background:#0d1016;border-radius:15px;text-align:center;padding:14px}.label{color:#9da5b5;font-size:13px}.value{font-size:32px;font-weight:900;margin-top:4px}
+.bar{height:12px;background:#292e38;border-radius:99px;overflow:hidden;margin:7px 0 13px}.fill{height:100%;background:#eee}
+.small{font-size:13px;color:#9da5b5;line-height:1.5}table{width:100%;border-collapse:collapse}td,th{padding:8px 5px;border-bottom:1px solid #292e38;text-align:left;font-size:14px}
+.hot{font-weight:900}.warn{color:#f4c84a;font-size:13px;line-height:1.5}
+</style>
+
+<style>
+#keyGate{position:fixed;inset:0;background:#0b0d12;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}
+.keyCard{width:min(520px,100%);background:#171b24;border:1px solid #2a3040;border-radius:22px;padding:22px}
+.keyCard h1{margin:0 0 7px;font-size:26px}.keyCard p{color:#9da5b5;font-size:14px;line-height:1.5}
+#keyInput{width:100%;padding:15px;border-radius:13px;border:1px solid #353d4f;background:#0d1016;color:#fff;font-size:17px;outline:none}
+#keyBtn{width:100%;padding:15px;margin-top:10px;border:0;border-radius:13px;background:#fff;color:#111;font-size:17px;font-weight:800}
+#keyMsg{min-height:20px;color:#ff6b6b;font-size:14px;margin-top:10px}
+#app{display:none}
+</style>
+</head>
+<body>
+<div id="keyGate"><div class="keyCard">
+<h1>🔐 Nhập Key</h1>
+<p>Nhập key hợp lệ để sử dụng công cụ dự đoán.</p>
+<input id="keyInput" type="text" placeholder="Nhập key..." autocomplete="off">
+<button id="keyBtn">Xác nhận Key</button>
+<div id="keyMsg"></div>
+</div></div>
+<div id="app">
+<main>
+<section class="card">
+<h1>🎲 Dự đoán 3 xúc xắc</h1>
+<div class="sub">Nhập các tổng gần nhất, từ 3 đến 18.</div>
+<textarea id="input" placeholder="9 10 11 12 15 9 10 7 9 3 8"></textarea>
+<button id="go">Phân tích & dự đoán</button>
+</section>
+
+<section class="card" id="result" hidden>
+<div class="grid">
+<div class="box"><div class="label">🎲 Tổng dự đoán</div><div class="value" id="total">-</div></div>
+<div class="box"><div class="label">🎯 Cửa</div><div class="value" id="side">-</div></div>
+</div>
+<br>
+<div>1️⃣ Cửa 1: <b id="p1">-</b></div><div class="bar"><div class="fill" id="bar1"></div></div>
+<div>2️⃣ Cửa 2: <b id="p2">-</b></div><div class="bar"><div class="fill" id="bar2"></div></div>
+<div class="small" id="note"></div>
+</section>
+
+<section class="card" id="stats" hidden>
+<h3>📊 Lịch sử</h3><div class="small" id="count"></div><br>
+<table><thead><tr><th>Tổng</th><th>Số lần</th><th>Tỷ lệ</th></tr></thead><tbody id="rows"></tbody></table>
+</section>
+
+<section class="card"><div class="warn">⚠️ Đây là công cụ thống kê. Với xúc xắc công bằng, các ván độc lập; lịch sử không đảm bảo dự đoán chính xác. % hiển thị là điểm mô hình, không phải xác suất thắng thật.</div></section>
+</main>
+
+<script>
+(function(){
+const ways={3:1,4:3,5:6,6:10,7:15,8:21,9:25,10:27,11:27,12:25,13:21,14:15,15:10,16:6,17:3,18:1};
+function parse(){
+ return document.getElementById('input').value.trim().split(/[\s,;|]+/)
+ .map(Number).filter(x=>Number.isInteger(x)&&x>=3&&x<=18);
+}
+function run(){
+ const a=parse();
+ if(a.length<3){alert('Nhập ít nhất 3 kết quả từ 3 đến 18.');return;}
+ const n=a.length, c=Array(19).fill(0), w=Array(19).fill(0);
+ let ws=0;
+ a.forEach((x,i)=>{let q=.5+1.5*(i+1)/n;c[x]++;w[x]+=q;ws+=q;});
+ const score={};
+ for(let s=3;s<=18;s++) score[s]=.45*c[s]/n+.35*w[s]/ws+.20*ways[s]/216;
+ const rank=Object.keys(score).map(Number).sort((a,b)=>score[b]-score[a]);
+ let s1=0,s2=0;
+ for(let s=3;s<=18;s++) s>=11?s1+=score[s]:s2+=score[s];
+ const p1=100*s1/(s1+s2),p2=100-p1,top=rank[0];
+ document.getElementById('result').hidden=false;document.getElementById('stats').hidden=false;
+ document.getElementById('total').textContent=top;
+ document.getElementById('side').textContent=top>=11?'1':'2';
+ document.getElementById('p1').textContent=p1.toFixed(1)+'%';
+ document.getElementById('p2').textContent=p2.toFixed(1)+'%';
+ document.getElementById('bar1').style.width=p1+'%';
+ document.getElementById('bar2').style.width=p2+'%';
+ document.getElementById('note').textContent='Top 3 tổng: '+rank.slice(0,3).join(' → ')+' | Đã phân tích '+n+' KQ.';
+ document.getElementById('count').textContent='Cửa 1 (11–18): '+a.filter(x=>x>=11).length+' | Cửa 2 (3–10): '+a.filter(x=>x<=10).length;
+ const rows=document.getElementById('rows');rows.innerHTML='';
+ for(let s=3;s<=18;s++){
+  const tr=document.createElement('tr');
+  tr.innerHTML='<td class="'+(s===top?'hot':'')+'">'+s+(s===top?' ⭐':'')+'</td><td>'+c[s]+'</td><td>'+((100*c[s]/n).toFixed(1))+'%</td>';
+  rows.appendChild(tr);
+ }
+}
+document.getElementById('go').addEventListener('click',run);
+})();
+</script>
+
+</div>
+<script>
+const VALID_KEYS=["TX-P8RA-CC3V-R2AA", "TX-TF79-RHFR-TMSN", "TX-RP8K-SA9E-FKBG", "TX-EJGM-F9EB-B2G3", "TX-KL3G-75YR-BYC7", "TX-NJJ2-WWA2-JXC4", "TX-KZT6-ZYJ8-8XKB", "TX-YKJB-U3S3-FJR4", "TX-74KE-RA8T-MVHJ", "TX-CW6N-F3ZZ-J323"];
+const STORAGE_KEY="tx_predictor_key_ok";
+const gate=document.getElementById("keyGate"),app=document.getElementById("app");
+const input=document.getElementById("keyInput"),msg=document.getElementById("keyMsg");
+function unlock(){
+ const v=input.value.trim();
+ if(VALID_KEYS.includes(v)){
+   localStorage.setItem(STORAGE_KEY,"1");
+   gate.style.display="none"; app.style.display="block";
+ }else msg.textContent="❌ Key không hợp lệ.";
+}
+document.getElementById("keyBtn").addEventListener("click",unlock);
+input.addEventListener("keydown",e=>{if(e.key==="Enter")unlock();});
+if(localStorage.getItem(STORAGE_KEY)==="1"){gate.style.display="none";app.style.display="block";}
+</script>
+</body>
+</html>
